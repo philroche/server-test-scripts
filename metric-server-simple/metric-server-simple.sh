@@ -15,54 +15,54 @@ RELEASE=${RELEASE-$(distro-info --devel)}
 MACHINEID="unset"
 INSTNAME=${INSTNAME-metric-server-simple-$RELEASE-$WHAT-$INSTTYPE}
 
-cleanup() {
-  if lxc info "$INSTNAME" >/dev/null 2>&1; then
-    echo "Cleaning up: $INSTNAME"
-    retry -t 3 -d 20,60,120 -- lxc delete "$INSTNAME" --force
-  fi
-}
+# cleanup() {
+#   if lxc info "$INSTNAME" >/dev/null 2>&1; then
+#     echo "Cleaning up: $INSTNAME"
+#     retry -t 3 -d 20,60,120 -- lxc delete "$INSTNAME" --force
+#   fi
+# }
+#
+# trap cleanup EXIT
 
-trap cleanup EXIT
-
-setup_lxd_minimal_remote() {
-  # Minimal images are leaner and boot faster.
-  lxc remote list --format csv | grep -q '^ubuntu-minimal-daily,' && return
-  lxc remote add --protocol simplestreams ubuntu-minimal-daily https://cloud-images.ubuntu.com/minimal/daily/
-}
+# setup_lxd_minimal_remote() {
+#   # Minimal images are leaner and boot faster.
+#   lxc remote list --format csv | grep -q '^ubuntu-minimal-daily,' && return
+#   lxc remote add --protocol simplestreams ubuntu-minimal-daily https://cloud-images.ubuntu.com/minimal/daily/
+# }
 
 cexec() {
   # This assumes that in the official LXD images
   # user 'ubuntu' always has UID 1000.
-  lxc exec --user=1000 --cwd=/home/ubuntu "$INSTNAME" -- "$@"
+  $@
 }
 
 Cexec() {
   # capital C => root
-  lxc exec "$INSTNAME" --env=DEBIAN_FRONTEND=noninteractive -- "$@"
+  DEBIAN_FRONTEND=noninteractive $@
 }
 
-setup_container() {
-  [ "$WHAT" = vm ] && vmflag=--vm || vmflag=""
-  # shellcheck disable=SC2086
-  lxc launch "ubuntu-minimal-daily:$RELEASE" "$INSTNAME" --ephemeral $vmflag -c limits.cpu=4 -c limits.memory=4GiB
-
-  # Wait for instance to be able to accept commands
-  retry -d 2 -t 90 -- lxc exec "$INSTNAME" true
-
-  # Wait for cloud-init to finish
-  # Run as root as the ubuntu (uid 1000) user may not be ready yet.
-  Cexec cloud-init status --wait >/dev/null
-
-  # Silence known spikes
-  Cexec systemctl mask --now unattended-upgrades.service
-
-  # Setup passwordless ssh authentication
-  cexec ssh-keygen -q -t rsa -f /home/ubuntu/.ssh/id_rsa -N ''
-  cexec cp /home/ubuntu/.ssh/id_rsa.pub /home/ubuntu/.ssh/authorized_keys
-
-  # Get the guests machine id
-  MACHINEID=$(cat /etc/machine-id)
-}
+# setup_container() {
+#   [ "$WHAT" = vm ] && vmflag=--vm || vmflag=""
+#   # shellcheck disable=SC2086
+#   lxc launch "ubuntu-minimal-daily:$RELEASE" "$INSTNAME" --ephemeral $vmflag -c limits.cpu=4 -c limits.memory=4GiB
+#
+#   # Wait for instance to be able to accept commands
+#   retry -d 2 -t 90 -- lxc exec "$INSTNAME" true
+#
+#   # Wait for cloud-init to finish
+#   # Run as root as the ubuntu (uid 1000) user may not be ready yet.
+#   Cexec cloud-init status --wait >/dev/null
+#
+#   # Silence known spikes
+#   Cexec systemctl mask --now unattended-upgrades.service
+#
+#   # Setup passwordless ssh authentication
+#   cexec ssh-keygen -q -t rsa -f /home/ubuntu/.ssh/id_rsa -N ''
+#   cexec cp /home/ubuntu/.ssh/id_rsa.pub /home/ubuntu/.ssh/authorized_keys
+#
+#   # Get the guests machine id
+#   MACHINEID=$(cat /etc/machine-id)
+# }
 
 install_dependencies() {
   Cexec apt-get -q update
@@ -113,8 +113,8 @@ do_measurement_ssh_noninteractive() {
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
 
   # Retrieve measurement results
-  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "$(get_result_filename ssh json first)"
-  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "$(get_result_filename ssh json warm)"
+  cp "/home/ubuntu/results-first.json" "$(get_result_filename ssh json first)"
+  cp "/home/ubuntu/results-warm.json" "$(get_result_filename ssh json warm)"
 }
 
 do_measurement_processcount() {
@@ -207,9 +207,9 @@ do_log_service_status() {
     Cexec systemctl status --all --no-pager || true
 }
 
-cleanup
-setup_lxd_minimal_remote
-setup_container
+# cleanup
+# setup_lxd_minimal_remote
+# setup_container
 wait_load_settled
 # Evict all caches after load settled
 Cexec sync
@@ -248,4 +248,4 @@ do_measurement_servicesecurity
 
 do_log_service_status
 
-cleanup
+# cleanup
