@@ -198,7 +198,34 @@ do_measurement_timers() {
   # Track the number and names of timers enabled.
   resultfile=$(get_result_filename "timers" "txt")
   Cexec systemctl list-units --type=timer --no-pager --no-legend > "${resultfile}"
-}do_install_services() {
+}
+
+do_measurement_build_info() {
+  # Note the instance build information.
+  resultfile=$(get_result_filename "buildinfo" "txt")
+  Cexec cat /etc/cloud/build.info > "${resultfile}"
+}
+
+do_measurement_release_info() {
+  # Note the instance release information
+  resultfile=$(get_result_filename "releaseinfo" "txt")
+  Cexec cat /etc/os-release > "${resultfile}"
+}
+
+do_measurement_kernel_config() {
+  # Note the instance kernel config. This is only useful when testing VM images.
+  resultfile=$(get_result_filename "kernelconfig" "txt")
+  kernel_version=$(Cexec uname  --kernel-release)
+  Cexec cat /boot/config-${kernel_version} > "${resultfile}"
+}
+
+do_measurement_kernel_modules() {
+  # Track instance kernel module list.  This is only useful when testing VM images.
+  resultfile=$(get_result_filename "kernelmodules" "txt")
+  Cexec lsmod > "${resultfile}"
+}
+
+do_install_services() {
   # This isn't very advanced, it installs various services in their default
   # configuration to recheck if any of them changed their default behavior
   # or footprint.
@@ -244,6 +271,11 @@ do_measurement_snap
 do_measurement_servicesecurity
 do_measurement_services
 do_measurement_timers
+do_measurement_build_info
+do_measurement_release_info
+do_measurement_kernel_config
+do_measurement_kernel_modules
+
 install_dependencies
 do_measurement_ssh_noninteractive
 
@@ -267,6 +299,7 @@ do_measurement_snap
 do_measurement_servicesecurity
 do_measurement_services
 do_measurement_timers
+
 do_log_service_status
 
 cleanup
