@@ -171,6 +171,12 @@ do_measurement_package() {
   Cexec dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n > "${resultfile}"
 }
 
+do_measurement_snap() {
+  # Track the packages installed
+  resultfile=$(get_result_filename "snaps" "txt")
+  Cexec snap list > "${resultfile}"
+}
+
 do_measurement_apt() {
   # We do not want to track the fluctuating sizes of cache accidentially when
   # looking at packages / disk size. But OTOH we want to get a signal if
@@ -224,6 +230,7 @@ do_measurement_ports
 do_measurement_processcount
 do_measurement_disk
 do_measurement_package
+do_measurement_snap
 do_measurement_servicesecurity
 
 install_dependencies
@@ -245,6 +252,7 @@ do_measurement_ports
 do_measurement_processcount
 do_measurement_disk
 do_measurement_package
+do_measurement_snap
 do_measurement_servicesecurity
 
 do_log_service_status
