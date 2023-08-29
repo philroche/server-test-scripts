@@ -188,7 +188,17 @@ do_measurement_apt() {
   Cexec rm -rf /var/lib/apt/lists/*
 }
 
-do_install_services() {
+do_measurement_services() {
+  # Track the number and names of services enabled.
+  resultfile=$(get_result_filename "services" "txt")
+  Cexec systemctl list-units --type=service --no-pager --no-legend > "${resultfile}"
+}
+
+do_measurement_timers() {
+  # Track the number and names of timers enabled.
+  resultfile=$(get_result_filename "timers" "txt")
+  Cexec systemctl list-units --type=timer --no-pager --no-legend > "${resultfile}"
+}do_install_services() {
   # This isn't very advanced, it installs various services in their default
   # configuration to recheck if any of them changed their default behavior
   # or footprint.
@@ -232,7 +242,8 @@ do_measurement_disk
 do_measurement_package
 do_measurement_snap
 do_measurement_servicesecurity
-
+do_measurement_services
+do_measurement_timers
 install_dependencies
 do_measurement_ssh_noninteractive
 
@@ -254,7 +265,8 @@ do_measurement_disk
 do_measurement_package
 do_measurement_snap
 do_measurement_servicesecurity
-
+do_measurement_services
+do_measurement_timers
 do_log_service_status
 
 cleanup
