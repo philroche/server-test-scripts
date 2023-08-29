@@ -14,6 +14,7 @@ INSTTYPE="c$CPU-m$MEM"
 RELEASE=${RELEASE-$(distro-info --devel)}
 MACHINEID="unset"
 INSTNAME=${INSTNAME-metric-server-simple-$RELEASE-$WHAT-$INSTTYPE}
+LXD_IMAGE_NAME=${LXD_IMAGE_NAME-ubuntu-minimal-daily:$RELEASE}
 
 cleanup() {
   if lxc info "$INSTNAME" >/dev/null 2>&1; then
@@ -44,7 +45,7 @@ Cexec() {
 setup_container() {
   [ "$WHAT" = vm ] && vmflag=--vm || vmflag=""
   # shellcheck disable=SC2086
-  lxc launch "ubuntu-minimal-daily:$RELEASE" "$INSTNAME" --ephemeral $vmflag -c limits.cpu=4 -c limits.memory=4GiB
+  lxc launch "$LXD_IMAGE_NAME" "$INSTNAME" --ephemeral $vmflag -c limits.cpu=4 -c limits.memory=4GiB
 
   # Wait for instance to be able to accept commands
   retry -d 2 -t 90 -- lxc exec "$INSTNAME" true
